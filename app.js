@@ -22,6 +22,9 @@ import {
   HasGuildCommands,
 } from "./commands.js";
 
+import https from "https";
+import fs from "fs";
+
 // Create an express app
 const app = express();
 // Get port, or default to 3000
@@ -216,13 +219,33 @@ app.post("/interactions", async function (req, res) {
   }
 });
 
-app.listen(PORT, () => {
-  console.log("Listening on port", PORT);
+https
+  .createServer(
+    // Provide the private and public key to the server by reading each
+    // file's content with the readFileSync() method.
+  {
+    key: fs.readFileSync("key.pem"),
+    cert: fs.readFileSync("cert.pem"),
+  },
+  app)
+  .listen(PORT, ()=>{
+    console.log("Listening on port", PORT)
 
-  // Check if guild commands from commands.json are installed (if not, install them)
-  HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
-    TEST_COMMAND,
-    CHALLENGE_COMMAND,
-    SERVER_ICON_COMMAND,
-  ]);
-});
+    // Check if guild commands from commands.json are installed (if not, install them)
+    HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
+      TEST_COMMAND,
+      CHALLENGE_COMMAND,
+      SERVER_ICON_COMMAND,
+    ]);
+  });
+
+// app.listen(PORT, () => {
+//   console.log("Listening on port", PORT);
+
+//   // Check if guild commands from commands.json are installed (if not, install them)
+//   HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
+//     TEST_COMMAND,
+//     CHALLENGE_COMMAND,
+//     SERVER_ICON_COMMAND,
+//   ]);
+// });
