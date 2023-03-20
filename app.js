@@ -114,7 +114,7 @@ const activeGames = {};
       });
     }
 
-    if (name === "Unsubscribe" && id) {
+    if (name === "unsubscribe" && id) {
       const userId = req.body.member.user.id;
       const channel = req.body.data.options[0].value;
 
