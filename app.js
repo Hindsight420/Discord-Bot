@@ -5,8 +5,9 @@ import {
   InteractionResponseType,
   InteractionResponseFlags,
   MessageComponentTypes,
-  ButtonStyleTypes,
+  ButtonStyleTypes
 } from "discord-interactions";
+import DiscordInteractions from "discord-interactions";
 import imageToBase64 from "image-to-base64";
 import {
   VerifyDiscordRequest,
@@ -24,14 +25,15 @@ import {
 
 import https from "https";
 import fs from "fs";
-import nacl from "tweetnacl";
 
 // Create an express app
 const app = express();
 // Get port, or default to 3000
 const PORT = process.env.PORT || 3000;
+const PUBLIC_KEY = process.env.PUBLIC_KEY;
+
 // Parse request body and verifies incoming requests using discord-interactions package
-app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
+app.use(express.json({ verify: VerifyDiscordRequest(PUBLIC_KEY) }));
 
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
@@ -39,27 +41,21 @@ const activeGames = {};
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  */
-app.post("/interactions", async function (req, res) {
+ app.post('/interactions', async function (req, res) {
   // Interaction type and data
   const { type, id, data } = req.body;
-  const signature = req.get('X-Signature-Ed25519');
-  const timestamp = req.get('X-Signature-Timestamp');
-  const body = req.rawBody; // rawBody is expected to be a string, not raw bytes
-
-  const isVerified = nacl.sign.detached.verify(
-    Buffer.from(timestamp + body),
-    Buffer.from(signature, 'hex'),
-    Buffer.from(PUBLIC_KEY, 'hex')
-  );
-
-  if (!isVerified) {
-    return res.status(401).end('invalid request signature');
-  }
+  // const signature = req.get('X-Signature-Ed25519');
+  // const timestamp = req.get('X-Signature-Timestamp');
+  // const isValidRequest = verifyKey(req.rawBody, signature, timestamp, 'PUBLIC_KEY');
+  // if (!isValidRequest) {
+  //   return res.status(401).end('Bad request signature');
+  // }
 
   /**
    * Handle verification requests
    */
   if (type === InteractionType.PING) {
+    console.log(req, res);
     return res.send({ type: InteractionResponseType.PONG });
   }
 
@@ -81,6 +77,7 @@ app.post("/interactions", async function (req, res) {
         },
       });
     }
+
     // "challenge" guild command
     if (name === "challenge" && id) {
       const userId = req.body.member.user.id;
@@ -115,6 +112,7 @@ app.post("/interactions", async function (req, res) {
         },
       });
     }
+
     if (name === "Set as server icon") {
       const message = data.resolved.messages[data.target_id];
       const imageUrl = message.attachments[0]?.url ?? message.embeds[0]?.url;
@@ -149,6 +147,16 @@ app.post("/interactions", async function (req, res) {
         },
       });
     }
+
+    DiscordInteractions.handleInteraction(req.body)
+    .then((result) => {
+      // Handle the interaction result here
+      res.json(result);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ error: 'An error occurred while handling the interaction' });
+    });
   }
 
   /**
@@ -233,17 +241,20 @@ app.post("/interactions", async function (req, res) {
   }
 });
 
+const privateKey = fs.readFileSync('/etc/letsencrypt/live/weirdvibes.hopto.org/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/weirdvibes.hopto.org/cert.pem', 'utf8');
+const ca = fs.readFileSync('/etc/letsencrypt/live/weirdvibes.hopto.org/chain.pem', 'utf8');
+
+const credentials = {
+  key: privateKey,
+  cert: certificate,
+  ca: ca
+};
+
 https
-  .createServer(
-    // Provide the private and public key to the server by reading each
-    // file's content with the readFileSync() method.
-  {
-    key: fs.readFileSync("key.pem"),
-    cert: fs.readFileSync("cert.pem"),
-  },
-  app)
-  .listen(PORT, ()=>{
-    console.log("Listening on port", PORT)
+  .createServer(credentials, app)
+  .listen(PORT, () => {
+    console.log("HTTPS Server listening on port", PORT)
 
     // Check if guild commands from commands.json are installed (if not, install them)
     HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
@@ -252,14 +263,3 @@ https
       SERVER_ICON_COMMAND,
     ]);
   });
-
-// app.listen(PORT, () => {
-//   console.log("Listening on port", PORT);
-
-//   // Check if guild commands from commands.json are installed (if not, install them)
-//   HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
-//     TEST_COMMAND,
-//     CHALLENGE_COMMAND,
-//     SERVER_ICON_COMMAND,
-//   ]);
-// });
