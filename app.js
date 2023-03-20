@@ -19,6 +19,7 @@ import { getShuffledOptions, getResult } from "./game.js";
 import {
   CHALLENGE_COMMAND,
   TEST_COMMAND,
+  CHANNEL_UNSUBSCRIBE_COMMAND,
   SERVER_ICON_COMMAND,
   HasGuildCommands,
 } from "./commands.js";
