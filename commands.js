@@ -83,7 +83,7 @@ export const CHALLENGE_COMMAND = {
   description: "Challenge to a match of rock paper scissors",
   options: [
     {
-      type: 3,
+      type: 3, // string
       name: "object",
       description: "Pick your object",
       required: true,
@@ -94,8 +94,22 @@ export const CHALLENGE_COMMAND = {
 };
 
 // Command containing options
+export const CHANNEL_UNSUBSCRIBE_COMMAND = {
+  name: "Unsubscribe",
+  description: "",
+  options: [
+    {
+      type: 7, // channel
+      name: "channel",
+      description: "Pick your channel",
+      required: true,
+    },
+  ],
+  type: 1,
+};
+
 export const SERVER_ICON_COMMAND = {
   name: "Set as server icon",
-  description: "", // no description allowed for message commands
+  description: "",
   type: 3,
 };

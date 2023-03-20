@@ -81,6 +81,7 @@ app.post("/interactions", async function (req, res) {
         },
       });
     }
+
     // "challenge" guild command
     if (name === "challenge" && id) {
       const userId = req.body.member.user.id;
@@ -115,6 +116,15 @@ app.post("/interactions", async function (req, res) {
         },
       });
     }
+
+    if (name === "Unsubscribe" && id) {
+      const userId = req.body.member.user.id;
+      const channel = req.body.data.options[0].value;
+
+      console.log(userId);
+      console.log(channel);
+    }
+
     if (name === "Set as server icon") {
       const message = data.resolved.messages[data.target_id];
       const imageUrl = message.attachments[0]?.url ?? message.embeds[0]?.url;
@@ -249,6 +259,7 @@ https
     HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
       TEST_COMMAND,
       CHALLENGE_COMMAND,
+      CHANNEL_UNSUBSCRIBE_COMMAND,
       SERVER_ICON_COMMAND,
     ]);
   });
