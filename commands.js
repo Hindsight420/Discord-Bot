@@ -95,8 +95,8 @@ export const CHALLENGE_COMMAND = {
 
 // Command containing options
 export const CHANNEL_UNSUBSCRIBE_COMMAND = {
-  name: "Unsubscribe",
-  description: "",
+  name: "unsubscribe",
+  description: "Unsubscribe from a channel",
   options: [
     {
       type: 7, // channel
