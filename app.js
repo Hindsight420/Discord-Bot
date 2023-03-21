@@ -5,7 +5,7 @@ import {
   InteractionResponseType,
   InteractionResponseFlags,
   MessageComponentTypes,
-  ButtonStyleTypes
+  ButtonStyleTypes,
 } from "discord-interactions";
 import DiscordInteractions from "discord-interactions";
 import imageToBase64 from "image-to-base64";
@@ -42,7 +42,7 @@ const activeGames = {};
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  */
- app.post('/interactions', async function (req, res) {
+app.post("/interactions", async function (req, res) {
   // Interaction type and data
   const { type, id, data } = req.body;
   // const signature = req.get('X-Signature-Ed25519');
@@ -116,10 +116,18 @@ const activeGames = {};
 
     if (name === "unsubscribe" && id) {
       const userId = req.body.member.user.id;
-      const channel = req.body.data.options[0].value;
+      const channelId = req.body.data.options[0].value;
+      const endpoint = "channels/" + channelId + "/permissions/" + userId;
+      const payload = {
+        type: 1,
+        allow: 0,
+        deny: 1024,
+      };
 
-      console.log(userId);
-      console.log(channel);
+      // console.log(userId);
+      // console.log(channelId);
+
+      DiscordRequest(endpoint, { method: "PUT", body: payload });
     }
 
     if (name === "Set as server icon") {
@@ -158,14 +166,16 @@ const activeGames = {};
     }
 
     DiscordInteractions.handleInteraction(req.body)
-    .then((result) => {
-      // Handle the interaction result here
-      res.json(result);
-    })
-    .catch((err) => {
-      console.error(err);
-      res.status(500).json({ error: 'An error occurred while handling the interaction' });
-    });
+      .then((result) => {
+        // Handle the interaction result here
+        res.json(result);
+      })
+      .catch((err) => {
+        console.error(err);
+        res
+          .status(500)
+          .json({ error: "An error occurred while handling the interaction" });
+      });
   }
 
   /**
@@ -250,26 +260,33 @@ const activeGames = {};
   }
 });
 
-const privateKey = fs.readFileSync('/etc/letsencrypt/live/weirdvibes.hopto.org/privkey.pem', 'utf8');
-const certificate = fs.readFileSync('/etc/letsencrypt/live/weirdvibes.hopto.org/cert.pem', 'utf8');
-const ca = fs.readFileSync('/etc/letsencrypt/live/weirdvibes.hopto.org/chain.pem', 'utf8');
+const privateKey = fs.readFileSync(
+  "/etc/letsencrypt/live/weirdvibes.hopto.org/privkey.pem",
+  "utf8"
+);
+const certificate = fs.readFileSync(
+  "/etc/letsencrypt/live/weirdvibes.hopto.org/cert.pem",
+  "utf8"
+);
+const ca = fs.readFileSync(
+  "/etc/letsencrypt/live/weirdvibes.hopto.org/chain.pem",
+  "utf8"
+);
 
 const credentials = {
   key: privateKey,
   cert: certificate,
-  ca: ca
+  ca: ca,
 };
 
-https
-  .createServer(credentials, app)
-  .listen(PORT, () => {
-    console.log("HTTPS Server listening on port", PORT)
+https.createServer(credentials, app).listen(PORT, () => {
+  console.log("HTTPS Server listening on port", PORT);
 
-    // Check if guild commands from commands.json are installed (if not, install them)
-    HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
-      TEST_COMMAND,
-      CHALLENGE_COMMAND,
-      CHANNEL_UNSUBSCRIBE_COMMAND,
-      SERVER_ICON_COMMAND,
-    ]);
-  });
+  // Check if guild commands from commands.json are installed (if not, install them)
+  HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
+    TEST_COMMAND,
+    CHALLENGE_COMMAND,
+    CHANNEL_UNSUBSCRIBE_COMMAND,
+    SERVER_ICON_COMMAND,
+  ]);
+});
